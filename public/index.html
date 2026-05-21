@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OVTransit</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #111122;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      display: flex;
+      justify-content: center;
+      min-height: 100vh;
+    }
+
+    .app {
+      width: 100%;
+      max-width: 420px;
+      background: #1a1a2e;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* TOP BAR */
+    .topbar {
+      background: #1a1a2e;
+      padding: 16px 16px 0;
+      border-bottom: 0.5px solid #2a2a45;
+    }
+    .topbar-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+    .app-title { font-size: 26px; font-weight: 800; color: #ffd966; letter-spacing: 0.5px; }
+    .icon-btn { background: none; border: none; cursor: pointer; color: #fff; font-size: 22px; padding: 6px; border-radius: 8px; transition: background 0.15s; }
+    .icon-btn:hover { background: #2a2a45; }
+
+    /* TABS */
+    .tabs { display: flex; }
+    .tab {
+      flex: 1; text-align: center; padding: 10px 0 9px;
+      font-size: 12px; font-weight: 700; color: #555;
+      letter-spacing: 0.8px; cursor: pointer;
+      border-bottom: 3px solid transparent;
+      transition: color 0.2s, border-color 0.2s;
+    }
+    .tab.active { color: #ffd966; border-bottom-color: #ffd966; }
+
+    /* CONTENT */
+    .content { flex: 1; overflow-y: auto; }
+    .panel { display: none; }
+    .panel.active { display: block; }
+
+    .sec-label {
+      font-size: 10px; font-weight: 700; color: #444;
+      letter-spacing: 1.2px; padding: 14px 16px 6px;
+      text-transform: uppercase;
+    }
+
+    /* STOP ROW */
+    .stop-row {
+      display: flex; align-items: center; gap: 14px;
+      padding: 13px 16px; cursor: pointer;
+      border-bottom: 0.5px solid #22223a;
+      transition: background 0.15s;
+    }
+    .stop-row:hover { background: #22223a; }
+
+    .s-icon {
+      width: 50px; height: 50px; border-radius: 14px;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .s-icon.bus   { background: #ffd966; }
+    .s-icon.tram  { background: #e84040; }
+    .s-icon.train { background: #1a6abf; }
+    .s-icon.metro { background: #7c3aed; }
+    .s-icon.ferry { background: #0ea5e9; }
+
+    .s-info { flex: 1; min-width: 0; }
+    .s-name { font-size: 15px; font-weight: 700; color: #fff; }
+    .s-sub  { font-size: 12px; color: #666; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .s-sub b { font-weight: 600; color: #888; }
+    .s-dist { font-size: 12px; color: #555; flex-shrink: 0; }
+
+    /* DEPARTURES VIEW */
+    .dep-view { display: none; flex-direction: column; min-height: 100vh; }
+    .dep-view.active { display: flex; }
+
+    .dep-header {
+      background: #1a1a2e; padding: 14px 16px;
+      display: flex; align-items: center; gap: 12px;
+      border-bottom: 0.5px solid #2a2a45;
+    }
+    .dep-icon {
+      width: 46px; height: 46px; border-radius: 12px;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .dep-title-wrap { flex: 1; }
+    .dep-title { color: #ffd966; font-size: 17px; font-weight: 700; }
+    .dep-sub   { color: #666; font-size: 12px; margin-top: 2px; }
+
+    .live-badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      background: #0d1f0d; border-radius: 20px;
+      padding: 5px 12px; margin: 12px 16px 4px;
+    }
+    .live-dot { width: 7px; height: 7px; border-radius: 50%; background: #22c55e; animation: pulse 1.5s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.3;} }
+    .live-text { font-size: 11px; color: #22c55e; font-weight: 700; }
+
+    .dep-row {
+      display: flex; align-items: center; gap: 12px;
+      padding: 13px 16px; border-bottom: 0.5px solid #22223a;
+    }
+    .line-pill {
+      min-width: 46px; height: 28px; border-radius: 7px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 800; flex-shrink: 0; padding: 0 8px;
+    }
+    .dep-dest { flex: 1; }
+    .dd-name { font-size: 14px; font-weight: 600; color: #fff; }
+    .dd-via  { font-size: 11px; color: #555; margin-top: 2px; }
+    .dep-t   { text-align: right; flex-shrink: 0; }
+    .dt-time { font-size: 14px; font-weight: 700; color: #fff; }
+    .dt-min  { font-size: 11px; color: #666; margin-top: 2px; }
+    .dt-min.soon { color: #e84040; font-weight: 700; }
+    .dt-min.now  { color: #22c55e; font-weight: 700; }
+
+    /* STATUS */
+    .status-box { padding: 40px 16px; text-align: center; }
+    .status-icon { font-size: 40px; margin-bottom: 12px; }
+    .status-title { font-size: 16px; font-weight: 600; color: #aaa; margin-bottom: 6px; }
+    .status-sub   { font-size: 12px; color: #555; line-height: 1.6; }
+
+    .retry-btn {
+      margin-top: 16px; background: #ffd966; color: #1a1a2e;
+      border: none; border-radius: 10px; padding: 10px 22px;
+      font-size: 14px; font-weight: 700; cursor: pointer; display: inline-block;
+      transition: opacity 0.15s;
+    }
+    .retry-btn:hover { opacity: 0.85; }
+
+    /* FAB */
+    .fab-row { padding: 16px; display: flex; justify-content: flex-end; }
+    .fab {
+      width: 54px; height: 54px; border-radius: 50%;
+      background: #ffd966; border: none; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: opacity 0.15s;
+    }
+    .fab:hover { opacity: 0.85; }
+    .fab i { font-size: 24px; color: #1a1a2e; }
+
+    /* STAR */
+    .star-btn { background: none; border: none; cursor: pointer; font-size: 20px; color: #555; padding: 4px; transition: color 0.15s; }
+    .star-btn.active { color: #ffd966; }
+
+    /* SEARCH BAR */
+    .search-wrap { padding: 12px 16px; }
+    .search-bar {
+      display: flex; align-items: center; gap: 10px;
+      background: #22223a; border: 0.5px solid #2a2a45;
+      border-radius: 12px; padding: 0 14px; height: 42px;
+    }
+    .search-bar i { font-size: 16px; color: #555; }
+    .search-bar input {
+      background: none; border: none; outline: none;
+      font-size: 14px; color: #fff; flex: 1;
+      font-family: inherit;
+    }
+    .search-bar input::placeholder { color: #444; }
+
+    /* DELAY */
+    .delay-pos { color: #e84040; font-size: 11px; }
+    .delay-neg { color: #22c55e; font-size: 11px; }
+
+    /* METRO M */
+    .metro-m { font-size: 26px; font-weight: 900; color: #fff; letter-spacing: -1px; }
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <!-- MAIN VIEW -->
+  <div id="main-view">
+    <div class="topbar">
+      <div class="topbar-row">
+        <button class="icon-btn" aria-label="Menu"><i class="ti ti-menu-2"></i></button>
+        <span class="app-title">OVTransit</span>
+        <button class="icon-btn" aria-label="Search"><i class="ti ti-search"></i></button>
+      </div>
+      <div class="tabs">
+        <div class="tab" id="tab-nearby"   onclick="switchTab('nearby')">NEARBY</div>
+        <div class="tab active" id="tab-recent" onclick="switchTab('recent')">RECENT</div>
+        <div class="tab" id="tab-fav"    onclick="switchTab('fav')">FAVOURITES</div>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- RECENT -->
+      <div class="panel active" id="panel-recent">
+        <div class="sec-label">Recently viewed</div>
+        <div class="stop-row" onclick="openDep('57240019','bus')">
+          <div class="s-icon bus">
+            <svg width="30" height="30" viewBox="0 0 30 30" fill="none">
+              <rect x="3" y="7" width="24" height="14" rx="3" fill="#1a1a2e"/>
+              <rect x="5" y="9" width="8" height="5" rx="1" fill="#ffd966"/>
+              <rect x="17" y="9" width="8" height="5" rx="1" fill="#ffd966"/>
+              <rect x="3" y="18" width="24" height="2" fill="#1a1a2e"/>
+              <circle cx="8" cy="24" r="2.5" fill="#1a1a2e"/>
+              <circle cx="22" cy="24" r="2.5" fill="#1a1a2e"/>
+            </svg>
+          </div>
+          <div class="s-info">
+            <div class="s-name">Busstation</div>
+            <div class="s-sub"><b>Bus stop</b> · Amstelveen</div>
+          </div>
+          <i class="ti ti-chevron-right" style="color:#333;font-size:16px"></i>
+        </div>
+        <div class="stop-row" onclick="openDep('57240024','bus')">
+          <div class="s-icon bus">
+            <svg width="30" height="30" viewBox="0 0 30 30" fill="none">
+              <rect x="3" y="7" width="24" height="14" rx="3" fill="#1a1a2e"/>
+              <rect x="5" y="9" width="8" height="5" rx="1" fill="#ffd966"/>
+              <rect x="17" y="9" width="8" height="5" rx="1" fill="#ffd966"/>
+              <rect x="3" y="18" width="24" height="2" fill="#1a1a2e"/>
+              <circle cx="8" cy="24" r="2.5" fill="#1a1a2e"/>
+              <circle cx="22" cy="24" r="2.5" fill="#1a1a2e"/>
+            </svg>
+          </div>
+          <div class="s-info">
+            <div class="s-name">Busstation (alt)</div>
+            <div class="s-sub"><b>Bus stop</b> · Amstelveen</div>
+          </div>
+          <i class="ti ti-chevron-right" style="color:#333;font-size:16px"></i>
+        </div>
+      </div>
+
+      <!-- NEARBY -->
+      <div class="panel" id="panel-nearby">
+        <div class="search-wrap">
+          <div class="search-bar"><i class="ti ti-map-pin"></i><input placeholder="Search stops near you..." /></div>
+        </div>
+        <div class="sec-label">Stops near you</div>
+        <div class="stop-row" onclick="openDep('57240019','bus')">
+          <div class="s-icon bus">
+            <svg width="30" height="30" viewBox="0 0 30 30" fill="none">
+              <rect x="3" y="7" width="24" height="14" rx="3" fill="#1a1a2e"/>
+              <rect x="5" y="9" width="8" height="5" rx="1" fill="#ffd966"/>
+              <rect x="17" y="9" width="8" height="5" rx="1" fill="#ffd966"/>
+              <rect x="3" y="18" width="24" height="2" fill="#1a1a2e"/>
+              <circle cx="8" cy="24" r="2.5" fill="#1a1a2e"/>
+              <circle cx="22" cy="24" r="2.5" fill="#1a1a2e"/>
+            </svg>
+          </div>
+          <div class="s-info">
+            <div class="s-name">Busstation</div>
+            <div class="s-sub"><b>Bus stop</b> · Amstelveen</div>
+          </div>
+          <span class="s-dist">200 m</span>
+        </div>
+      </div>
+
+      <!-- FAVOURITES -->
+      <div class="panel" id="panel-fav">
+        <div class="sec-label">Saved stops</div>
+        <div id="fav-list"><div class="status-box"><div class="status-title" style="color:#444;">No favourites yet</div><div class="status-sub">Tap the ☆ on any stop to save it here.</div></div></div>
+      </div>
+
+      <div class="fab-row">
+        <button class="fab" aria-label="Scan"><i class="ti ti-qrcode"></i></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- DEPARTURES VIEW -->
+  <div id="dep-view" class="dep-view">
+    <div class="dep-header">
+      <button class="icon-btn" onclick="goBack()" aria-label="Back"><i class="ti ti-arrow-left"></i></button>
+      <div id="dep-icon-slot" class="dep-icon s-icon bus">
+        <svg width="30" height="30" viewBox="0 0 30 30" fill="none">
+          <rect x="3" y="7" width="24" height="14" rx="3" fill="#1a1a2e"/>
+          <rect x="5" y="9" width="8" height="5" rx="1" fill="#ffd966"/>
+          <rect x="17" y="9" width="8" height="5" rx="1" fill="#ffd966"/>
+          <rect x="3" y="18" width="24" height="2" fill="#1a1a2e"/>
+          <circle cx="8" cy="24" r="2.5" fill="#1a1a2e"/>
+          <circle cx="22" cy="24" r="2.5" fill="#1a1a2e"/>
+        </svg>
+      </div>
+      <div class="dep-title-wrap">
+        <div class="dep-title" id="dep-title-text">Loading...</div>
+        <div class="dep-sub" id="dep-sub-text">Fetching live data...</div>
+      </div>
+      <button class="icon-btn" onclick="refreshDep()" aria-label="Refresh"><i class="ti ti-refresh"></i></button>
+    </div>
+
+    <div id="dep-content"></div>
+  </div>
+
+</div>
+
+<script>
+  const LINE_COLORS = ['#ffd966','#e84040','#1a6abf','#7c3aed','#15803d','#e8870a','#0ea5e9','#d946ef','#f97316'];
+  const lineColorMap = {};
+  let colorIdx = 0;
+  let currentStop = null;
+  let currentType = 'bus';
+  let refreshTimer = null;
+
+  function getLineColor(line) {
+    if (!lineColorMap[line]) lineColorMap[line] = LINE_COLORS[colorIdx++ % LINE_COLORS.length];
+    return lineColorMap[line];
+  }
+
+  function switchTab(tab) {
+    ['nearby','recent','fav'].forEach(t => {
+      document.getElementById('panel-' + t).classList.toggle('active', t === tab);
+      document.getElementById('tab-' + t).classList.toggle('active', t === tab);
+    });
+  }
+
+  const ICONS = {
+    bus: `<svg width="30" height="30" viewBox="0 0 30 30" fill="none"><rect x="3" y="7" width="24" height="14" rx="3" fill="#1a1a2e"/><rect x="5" y="9" width="8" height="5" rx="1" fill="#ffd966"/><rect x="17" y="9" width="8" height="5" rx="1" fill="#ffd966"/><rect x="3" y="18" width="24" height="2" fill="#1a1a2e"/><circle cx="8" cy="24" r="2.5" fill="#1a1a2e"/><circle cx="22" cy="24" r="2.5" fill="#1a1a2e"/></svg>`,
+    tram: `<svg width="30" height="30" viewBox="0 0 30 30" fill="none"><rect x="7" y="4" width="16" height="18" rx="3" fill="#fff" fill-opacity="0.15"/><rect x="9" y="6" width="5" height="5" rx="1" fill="#fff"/><rect x="16" y="6" width="5" height="5" rx="1" fill="#fff"/><rect x="7" y="13" width="16" height="2" fill="#fff" fill-opacity="0.3"/><circle cx="11" cy="25" r="2.5" fill="#fff"/><circle cx="19" cy="25" r="2.5" fill="#fff"/><line x1="5" y1="28" x2="25" y2="28" stroke="#fff" stroke-width="1.5"/></svg>`,
+    train: `<svg width="30" height="30" viewBox="0 0 30 30" fill="none"><rect x="7" y="3" width="16" height="18" rx="3" fill="#fff" fill-opacity="0.15"/><rect x="9" y="5" width="5" height="5" rx="1" fill="#fff"/><rect x="16" y="5" width="5" height="5" rx="1" fill="#fff"/><rect x="7" y="13" width="16" height="2" fill="#fff" fill-opacity="0.4"/><circle cx="11" cy="24" r="3" fill="#fff"/><circle cx="19" cy="24" r="3" fill="#fff"/><line x1="4" y1="28" x2="26" y2="28" stroke="#fff" stroke-width="1.5"/></svg>`,
+    metro: `<span class="metro-m">M</span>`,
+    ferry: `<i class="ti ti-sailboat" style="font-size:26px;color:#fff;"></i>`,
+  };
+
+  const ICON_BG = { bus:'#ffd966', tram:'#e84040', train:'#1a6abf', metro:'#7c3aed', ferry:'#0ea5e9' };
+
+  function openDep(stopId, type) {
+    currentStop = stopId;
+    currentType = type || 'bus';
+    document.getElementById('main-view').style.display = 'none';
+    document.getElementById('dep-view').classList.add('active');
+    const slot = document.getElementById('dep-icon-slot');
+    slot.className = 'dep-icon s-icon ' + currentType;
+    slot.style.background = ICON_BG[currentType] || '#ffd966';
+    slot.innerHTML = ICONS[currentType] || ICONS.bus;
+    document.getElementById('dep-title-text').textContent = 'Loading...';
+    document.getElementById('dep-sub-text').textContent = 'Stop ' + stopId;
+    loadDepartures();
+    if (refreshTimer) clearInterval(refreshTimer);
+    refreshTimer = setInterval(loadDepartures, 30000);
+  }
+
+  function goBack() {
+    document.getElementById('dep-view').classList.remove('active');
+    document.getElementById('main-view').style.display = '';
+    if (refreshTimer) { clearInterval(refreshTimer); refreshTimer = null; }
+  }
+
+  function refreshDep() { loadDepartures(); }
+
+  async function loadDepartures() {
+    if (!currentStop) return;
+    document.getElementById('dep-content').innerHTML = '<div class="status-box"><div class="status-sub" style="color:#555;">Fetching live data...</div></div>';
+
+    try {
+      const res = await fetch(`/api/departures?stop=${currentStop}`);
+      if (!res.ok) throw new Error('Server error ' + res.status);
+      const data = await res.json();
+      renderDepartures(data);
+    } catch(e) {
+      document.getElementById('dep-content').innerHTML = `
+        <div class="status-box">
+          <div class="status-icon">⚠️</div>
+          <div class="status-title">Could not load departures</div>
+          <div class="status-sub">${e.message}</div>
+          <button class="retry-btn" onclick="loadDepartures()">Try again</button>
+        </div>`;
+    }
+  }
+
+  function renderDepartures(data) {
+    const stopData = data[currentStop];
+    if (!stopData) {
+      document.getElementById('dep-content').innerHTML = '<div class="status-box"><div class="status-title">Stop not found</div></div>';
+      return;
+    }
+
+    const stopName = stopData.TimingPointName || stopData.StopAreaName || 'Stop ' + currentStop;
+    document.getElementById('dep-title-text').textContent = stopName;
+
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString('nl-NL', {hour:'2-digit', minute:'2-digit'});
+    document.getElementById('dep-sub-text').textContent = 'Updated ' + timeStr;
+
+    const passes = stopData.Passes || {};
+    const deps = Object.values(passes)
+      .map(p => ({ ...p, dt: new Date(p.ExpectedDepartureTime || p.TargetDepartureTime || p.AimedDepartureTime) }))
+      .filter(p => p.dt >= new Date(now - 60000))
+      .sort((a, b) => a.dt - b.dt)
+      .slice(0, 10);
+
+    if (!deps.length) {
+      document.getElementById('dep-content').innerHTML = '<div class="status-box"><div class="status-title">No upcoming departures</div><div class="status-sub">Check back later.</div></div>';
+      return;
+    }
+
+    let html = `<div class="live-badge"><div class="live-dot"></div><span class="live-text">Live · ${stopName}</span></div>`;
+    html += '<div style="margin-top:8px;">';
+
+    deps.forEach(p => {
+      const line = p.LinePublicNumber || '?';
+      const bg = getLineColor(line);
+      const txtCol = (bg === '#ffd966') ? '#1a1a2e' : '#fff';
+      const dest = p.DestinationName50 || p.DestinationName || '?';
+      const depTime = p.dt.toLocaleTimeString('nl-NL', {hour:'2-digit', minute:'2-digit'});
+      const diffMin = Math.round((p.dt - now) / 60000);
+      const delay = p.ExpectedDepartureTime && p.TargetDepartureTime
+        ? Math.round((new Date(p.ExpectedDepartureTime) - new Date(p.TargetDepartureTime)) / 60000) : 0;
+      const delayHtml = delay > 0 ? `<span class="delay-pos"> +${delay}'</span>` : delay < 0 ? `<span class="delay-neg"> ${delay}'</span>` : '';
+      const minClass = diffMin <= 0 ? 'now' : diffMin <= 5 ? 'soon' : '';
+      const minLabel = diffMin <= 0 ? 'Now' : diffMin === 1 ? '1 min' : diffMin + ' min';
+      const transport = p.TransportType || '';
+
+      html += `
+        <div class="dep-row">
+          <div class="line-pill" style="background:${bg};color:${txtCol}">${line}</div>
+          <div class="dep-dest">
+            <div class="dd-name">${dest}</div>
+            <div class="dd-via">${transport} · ${p.DataOwnerCode || ''}</div>
+          </div>
+          <div class="dep-t">
+            <div class="dt-time">${depTime}${delayHtml}</div>
+            <div class="dt-min ${minClass}">${minLabel}</div>
+          </div>
+        </div>`;
+    });
+
+    html += '</div>';
+    document.getElementById('dep-content').innerHTML = html;
+  }
+</script>
+</body>
+</html>
